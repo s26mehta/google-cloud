@@ -82,7 +82,7 @@ def get_storage_credentials():
         return None
 
 
-def upload_image_to_storage(local_path, remote_name, bucket=DEFAULT_BUCKET):
+def upload_image(local_path, remote_name, bucket=STORAGE_BUCKET):
     """
     Upload the file to Google Storage
     :param local_path: The local path to the file to upload
@@ -100,8 +100,28 @@ def upload_image_to_storage(local_path, remote_name, bucket=DEFAULT_BUCKET):
             media_body=local_path)
         req.execute()
         logger.info("Upload complete!")
-        return True
+
+        uploaded = check_if_image_exists(remote_name)
+
+        if uploaded is True:
+            return True
+        else:
+            return False
 
     except Exception as e:
         logger.debug("Unable to upload file %s to google cloud: %s" % (local_path, e))
+        return False
+
+
+def check_if_image_exists(name, bucket=STORAGE_BUCKET):
+    try:
+        service = discovery.build('storage', 'v1', credentials=get_storage_credentials())
+
+        request = service.objects().get(bucket=bucket, object=name)
+        response = request.execute()
+        print(json.dumps(response, indent=2))
+        return True
+
+    except Exception as e:
+        print("Image %s does not exist on google cloud" % name)
         return False
