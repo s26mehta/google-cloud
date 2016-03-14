@@ -6,6 +6,10 @@ from logging import handlers
 from apiclient import discovery
 from oauth2client.service_account import ServiceAccountCredentials
 
+#------------###############################---------------#
+# Uncomment next line and comment out line 7 if you are using older version of oauth2client
+# from oauth2client.client import SignedJwtAssertionCredentials
+
 PROJECT_NAME = ''    # This is the project name you chose
 NETWORK_NAME = ''    # This is the network name you chose for your project
 STORAGE_ZONE = ''    # This is the zone your google cloud storage bucket resides in
@@ -62,8 +66,12 @@ def get_storage_credentials():
     :return: Google Cloud Credentials
     """
     try:
-        client_email = get_client_email_from_json()
-        private_key = get_private_key_from_json()
+        #------------###############################---------------#
+        # Uncomment next few line and comment out line 75 if you are using older version of oauth2client
+        # client_email = get_client_email_from_json()
+        # private_key = get_private_key_from_json()
+        # credentials = SignedJwtAssertionCredentials(client_email, private_key,
+
         credentials = ServiceAccountCredentials.from_json_keyfile_name(STORAGE_KEY,
                                                     'https://www.googleapis.com/auth/devstorage.read_write')
         credentials.authorize(Http())
