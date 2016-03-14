@@ -82,13 +82,13 @@ def get_storage_credentials():
         return None
 
 
-def upload_image(local_path, remote_name, bucket=STORAGE_BUCKET):
+def upload_file(local_path, remote_name, bucket=STORAGE_BUCKET):
     """
-    Upload the file to Google Storage
+    Upload a file to Google Storage
     :param local_path: The local path to the file to upload
-    :param remote_name: The new name of the file in the remote storage
-    :param bucket: The bucket on Cloud
-    :return: Returns public url to image, False otherwise
+    :param remote_name: The name of the file in the google cloud storage
+    :param bucket: The bucket on google cloud storage you want to upload the file to
+    :return: True if uploaded, False otherwise
     """
     try:
         service = discovery.build('storage', 'v1', credentials=get_storage_credentials())
@@ -101,7 +101,7 @@ def upload_image(local_path, remote_name, bucket=STORAGE_BUCKET):
         req.execute()
         logger.info("Upload complete!")
 
-        uploaded = check_if_image_exists(remote_name)
+        uploaded = check_if_file_exists(remote_name)
 
         if uploaded is True:
             return True
@@ -113,15 +113,21 @@ def upload_image(local_path, remote_name, bucket=STORAGE_BUCKET):
         return False
 
 
-def check_if_image_exists(name, bucket=STORAGE_BUCKET):
+def check_if_file_exists(name, bucket=STORAGE_BUCKET):
+    """
+    Check if file exists on google cloud storage
+    :param name: Name of file you are checking
+    :param bucket: Bucket where you expect the file to be
+    :return: True if exists. False otherwise
+    """
     try:
         service = discovery.build('storage', 'v1', credentials=get_storage_credentials())
 
         request = service.objects().get(bucket=bucket, object=name)
-        response = request.execute()
-        print(json.dumps(response, indent=2))
+        request.execute()
+
         return True
 
-    except Exception as e:
-        print("Image %s does not exist on google cloud" % name)
+    except FileNotFoundError as e:
+        logger.debug("Image %s does not exist on google cloud" % name)
         return False
