@@ -96,7 +96,7 @@ def upload_file(local_path, remote_name, bucket=STORAGE_BUCKET):
         req = service.objects().insert(
             bucket=bucket,
             name=remote_name,
-            predefinedAcl="publicRead",
+            # predefinedAcl="publicRead",         Uncomment this line if you want your files to be accessible to anyone
             media_body=local_path)
         req.execute()
         logger.info("Upload complete!")
