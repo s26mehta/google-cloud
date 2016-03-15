@@ -28,11 +28,11 @@ def upload_file(local_path, remote_name, bucket=STORAGE_BUCKET):
             # predefinedAcl="publicRead",         Uncomment this line if you want your files to be accessible to anyone
             media_body=local_path)
         req.execute()
-        logger.info("Upload complete!")
 
         uploaded = check_if_file_exists(remote_name)
 
         if uploaded is True:
+            logger.info("Upload complete!")
             return True
         else:
             return False
@@ -67,9 +67,13 @@ def upload_file_in_chunks(local_path, remote_name, bucket=STORAGE_BUCKET):
         req = service.objects().insert(bucket=bucket, name=remote_name, media_body=media)
         req.execute()
 
-        logger.info("Upload complete!")
+        uploaded = check_if_file_exists(remote_name)
 
-        return True
+        if uploaded is True:
+            logger.info("Upload complete!")
+            return True
+        else:
+            return False
 
     except Exception as e:
         logger.debug("Unable to upload file %s to google cloud: %s" % (local_path, e))
