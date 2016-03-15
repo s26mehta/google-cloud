@@ -12,7 +12,7 @@ from config import logger, STORAGE_BUCKET, get_storage_credentials
 from apiclient import discovery
 
 
-CHUNK_SIZE = 1024 * 2 * 2
+CHUNK_SIZE = 1024 * 1024 * 2
 
 
 def download_file_from_storage(file_name, local_path, bucket=STORAGE_BUCKET):
