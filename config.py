@@ -22,6 +22,7 @@ STORAGE_ZONE = ''    # This is the zone your google cloud storage bucket resides
 STORAGE_BUCKET = ''  # This is the name of the bucket that want to upload files to
 STORAGE_KEY = ''     # This will be the google cloud storage key file in json format
 
+
 # Create logging service
 logger = logging.getLogger('logger')
 logger.setLevel(logging.DEBUG)
@@ -83,6 +84,22 @@ def get_storage_credentials():
         credentials.authorize(Http())
         return credentials
 
+    except Exception as e:
+        logger.debug("Unable to get credentials: %s" % e)
+        return None
+
+
+def get_compute_engine_credentials():
+    """
+    Get the Google Cloud Storage Credentials
+    :return: Google Cloud Credentials
+    """
+    try:
+        client_email = get_client_email_from_json()
+        private_key = get_private_key_from_json()
+        credentials = SignedJwtAssertionCredentials(client_email, private_key,
+                                                    'https://www.googleapis.com/auth/compute')
+        return credentials
     except Exception as e:
         logger.debug("Unable to get credentials: %s" % e)
         return None
