@@ -102,6 +102,30 @@ def get_instance(name, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME):
         logger.debug("Failed: %s" % e)
 
 
+def get_ip_address_of_vm(name, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME):
+    """
+    Gets the IP address of the instance
+
+    :param name: Name of instance as specified on google cloud
+    :param zone: Zone the VM exists in
+    :param project: Name of Project
+    :return: IP address of VM specified
+    """
+    try:
+        logger.info("Getting IP address of VM %s." % name)
+
+        compute = discovery.build('compute', 'v1', credentials=get_storage_credentials())
+        req = compute.instances().get(project=project, zone=zone, instance=name)
+        response = req.execute()
+
+        logger.info("Completed")
+
+        return response['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+
+    except Exception as e:
+        logger.debug("Failed: %s" % e)
+
+
 def wait_for_operation(project, zone, operation):
     """
     Checks if operation demanded (create/start/stop/delete) is completed
