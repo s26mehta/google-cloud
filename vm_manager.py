@@ -79,6 +79,29 @@ def create_disk_for_vm(name, source_image, disk_size, zone=DEFAULT_VM_ZONE, proj
         return False
 
 
+def get_instance(name, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME):
+    """
+    Gets the information of the instance
+
+    :param name: Name of instance as specified on google cloud
+    :param zone: Zone the VM exists in
+    :param project: Name of Project
+    :return: Json object containing information on instance specified
+    """
+
+    try:
+        logger.info("Getting information for VM %s." % name)
+
+        compute = discovery.build('compute', 'v1', credentials=get_storage_credentials())
+        req = compute.instances().get(project=project, zone=zone, instance=name)
+        response = req.execute()
+
+        return response
+
+    except Exception as e:
+        logger.debug("Failed: %s" % e)
+
+
 def wait_for_operation(project, zone, operation):
     """
     Checks if operation demanded (create/start/stop/delete) is completed
