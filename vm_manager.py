@@ -24,7 +24,7 @@ Purpose: Create, start, terminate and delete google cloud virtual machines via t
 import json
 import time
 
-from config import logger, PROJECT_NAME, get_storage_credentials
+from config import logger, PROJECT_NAME, get_compute_engine_credentials
 from apiclient import discovery
 
 DEFAULT_VM_ZONE = "us-central1-f"
@@ -32,7 +32,7 @@ DEFAULT_VM_ZONE = "us-central1-f"
 
 def list_vm_instances(project=PROJECT_NAME, zone=DEFAULT_VM_ZONE):
     try:
-        compute = discovery.build('compute', 'v1', credentials=get_storage_credentials())
+        compute = discovery.build('compute', 'v1', credentials=get_compute_engine_credentials())
         req = compute.instances().list(project=project, zone=zone)
         response = req.execute()
         print(json.dumps(response['items'], indent='\n'))
@@ -92,7 +92,7 @@ def wait_for_operation(project, zone, operation):
 
     while True:
         try:
-            compute = discovery.build('compute', 'v1', credentials=get_storage_credentials())
+            compute = discovery.build('compute', 'v1', credentials=get_compute_engine_credentials())
             req = compute.zoneOperations().get(
                 project=project,
                 zone=zone,
