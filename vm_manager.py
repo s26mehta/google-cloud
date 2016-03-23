@@ -23,8 +23,9 @@ Purpose: Create, start, terminate and delete google cloud virtual machines via t
 
 import json
 import time
+import os
 
-from config import logger, PROJECT_NAME, get_compute_engine_credentials
+from config import logger, PROJECT_NAME, NETWORK_NAME, get_compute_engine_credentials
 from apiclient import discovery
 
 DEFAULT_VM_ZONE = "us-central1-f"
@@ -55,7 +56,7 @@ def create_disk_for_vm(name, source_image, disk_size, zone=DEFAULT_VM_ZONE, proj
     :return: Link of disk if successful, False if unsuccessful
     """
     try:
-        compute = discovery.build('compute', 'v1', credentials=get_storage_credentials())
+        compute = discovery.build('compute', 'v1', credentials=get_compute_engine_credentials())
 
         config = {
             'name': name,
@@ -92,7 +93,7 @@ def get_instance(name, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME):
     try:
         logger.info("Getting information for VM %s." % name)
 
-        compute = discovery.build('compute', 'v1', credentials=get_storage_credentials())
+        compute = discovery.build('compute', 'v1', credentials=get_compute_engine_credentials())
         req = compute.instances().get(project=project, zone=zone, instance=name)
         response = req.execute()
 
@@ -114,7 +115,7 @@ def get_ip_address_of_vm(name, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME):
     try:
         logger.info("Getting IP address of VM %s." % name)
 
-        compute = discovery.build('compute', 'v1', credentials=get_storage_credentials())
+        compute = discovery.build('compute', 'v1', credentials=get_compute_engine_credentials())
         req = compute.instances().get(project=project, zone=zone, instance=name)
         response = req.execute()
 
@@ -124,6 +125,182 @@ def get_ip_address_of_vm(name, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME):
 
     except Exception as e:
         logger.debug("Failed: %s" % e)
+
+
+def create_instance(name, disk_size, vm_id, num_cores=2, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME,
+                    network=NETWORK_NAME):
+    """
+    Creates vm_instances with disks that hold ftp distributor and retriever code.
+
+    :param name: Name of VM instance
+    :param disk_size: Size of disk
+    :param num_cores: Number of cores you want the VM to have.
+                      Options: Micro, small, 1, 2, 4, 8, 16, 32
+    :param zone: The zone you want instantiate the VM in
+    :param project: The project the VM is created under
+    :param network: The network the VM is created under
+    :return: True or False
+    """
+
+    logger.info("Parameter of this call are:\nVM Name: %s\nDisk size: %s\n"
+                "Number of cores: %s\nFTP retriever parameter: %s\n"
+                "FTP Distributor parameter: %s\n Zone: %s" % (name, disk_size, num_cores, ftp_retriever_params,
+                                                              ftp_distributor_params, zone))
+
+    try:
+        logger.info("Creating VM named %s" % name)
+
+        global START, VM_NAME, VM_DISK_SIZE, VM_MACHINE_TYPE
+        START = time.time()
+
+        startup_script = open(
+            os.path.join(os.path.dirname(__file__), 'startup-script.sh'), 'r'
+        ).read()
+
+        machine = {
+            'micro' : 'f1-micro',
+            'small' : 'g1-small',
+                '1' : 'n1-standard-1',
+                '2' : 'n1-standard-2',
+                '4' : 'n1-standard-4',
+                '8' : 'n1-standard-8',
+               '16' : 'n1-standard-16',
+               '32' : 'n1-standard-32'
+        }[str(num_cores)]
+        machine_type = 'projects/%s/zones/%s/machineTypes/%s' % (project, zone, machine)
+
+        disk_image = create_disk_for_vm(name, "global/images/remotex-image-testing", disk_size)
+
+        # Use this if you want to create vm directly from VM
+        # disk_image = 'projects/skywatch-app/global/images/remotex-image'
+        # disk_type = 'projects/%s/zones/%s/diskTypes/pd-standard' % (project, zone)
+
+        if disk_image is False:
+            return False
+
+        network = "projects/%s/global/networks/%s" % (project, network)
+
+        # Config that specifies specifications of vm
+        config = {
+            'name': name,                          # Name of instance
+            # 'zone': zone,                          # Zone chosen for instance (There are zone quotas)
+            'machineType': machine_type,           # Machine Type for vm (dependent on zone)
+            'description': '',                     # Description for vm instance (Optional)
+            'canIpForward': False,                 # Needed only if we plan to forward routes from instance
+            'networkInterfaces': [                  # Specifies how this interface interacts with internet
+                {
+                    'network': network,                       # Default Network access
+                    'accessConfigs': [                        # Array of configurations for the interface
+                        {'type': 'ONE_TO_ONE_NAT',            # Only option available
+                         'name': 'External NAT'}              # Name can be anything
+                                                              # Can also specify natIP or left blank
+                    ],
+                }
+            ],
+            'metadata': {
+                "items": [
+                    {
+                        'key': 'startup-script',
+                        'value': startup_script
+                    },
+                    {
+                        'key': 'vm_name',
+                        'value': name
+                    },
+                    {
+                        'key': 'vm_start_time',
+                        'value': START
+                    },
+                    {
+                        'key': 'vm_id',
+                        'value': vm_id
+                    },
+                    {
+                        'key': 'vm_disk_size',
+                        'value': VM_DISK_SIZE
+                    },
+                    {
+                        'key': 'vm_machine_type',
+                        'value': VM_MACHINE_TYPE
+                    }
+                ]
+            },
+            'tags': {
+                "items": [
+                    "http-server",
+                    "https-server"
+                ]
+            },
+            'disks': [                              # Lists an array of disks associated with this instance
+                {
+                    "index": 0,                     # Index of disk attached with vm (can be more than one)
+                    "type": 'PERSISTENT',           # Can be SCRATCH or PERSISTENT (default = PERSISTENT)
+                    "mode": 'READ_WRITE',           # Can be READ_WRITE (default) or READ_ONLY
+                    "source": disk_image,             # Specifies a valid partial or full URL to an existing
+                                                    #    Persistent Disk resource. This field is only
+                                                    #    applicable for persistent disks when creating from existing
+                    "deviceName": name,
+                    "boot": True,                   # Indicates that this is boot disk
+                    # "initializeParams": {           # Parameters for this disk
+                    #    "sourceImage": disk_image,  # Disk image you want to use (can be custom image)
+                    #    "diskSizeGb": 10,    # Size of disk
+                    #    "diskType": disk_type       # Disk type to use to create instance
+                    # },                              #   can be pd-standard, pd-ssd, local-ssd
+                    "autoDelete": True,
+                }
+            ],
+            'serviceAccounts': [
+                {
+                    'email': 'default',
+                    'scopes':
+                    [
+                        'https://www.googleapis.com/auth/devstorage.read_write',
+                        'https://www.googleapis.com/auth/logging.write'
+                    ]
+                }
+            ],
+        }
+
+        compute = discovery.build('compute', 'v1', credentials=get_compute_engine_credentials())
+        req = compute.instances().insert(project=project, zone=zone, body=config)
+        resp = req.execute()
+
+        wait_for_operation(project, zone, resp['name'])
+
+        logger.debug("Completed creating VM named %s." % name)
+
+        return True
+
+    except Exception as e:
+        logger.debug("Unable to create instance: %s" % e)
+        print(("Unable to create instance: %s" % e))
+        return False
+
+
+def delete_instance(name, zone=DEFAULT_VM_ZONE):
+    """
+    Deletes VM instance on Google Cloud compute Engine
+
+    :param name: Name of VM instance you want to delete
+    :param zone: Zone of VM instance you want to delete
+    :return: True or False
+    """
+    try:
+        logger.info("Deleting VM named %s." % name)
+
+        compute = discovery.build('compute', 'v1', credentials=get_compute_engine_credentials())
+        req = compute.instances().delete(project=PROJECT_NAME, zone=zone, instance=name)
+        response = req.execute()
+
+        wait_for_operation(PROJECT_NAME, zone, response['name'])
+
+        logger.info('Deletion successful!')
+
+        return True
+
+    except Exception as e:
+        logger.debug("Deletion of VM %s failed: %s" % e)
+        return False
 
 
 def wait_for_operation(project, zone, operation):
