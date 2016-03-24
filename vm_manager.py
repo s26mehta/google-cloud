@@ -127,7 +127,7 @@ def get_ip_address_of_vm(name, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME):
         logger.debug("Failed: %s" % e)
 
 
-def create_instance(name, disk_size, vm_id, num_cores=2, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME,
+def create_instance(name, disk_size, num_cores=2, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME,
                     network=NETWORK_NAME):
     """
     Creates vm_instances with disks that hold ftp distributor and retriever code.
@@ -142,30 +142,22 @@ def create_instance(name, disk_size, vm_id, num_cores=2, zone=DEFAULT_VM_ZONE, p
     :return: True or False
     """
 
-    logger.info("Parameter of this call are:\nVM Name: %s\nDisk size: %s\n"
-                "Number of cores: %s\nFTP retriever parameter: %s\n"
-                "FTP Distributor parameter: %s\n Zone: %s" % (name, disk_size, num_cores, ftp_retriever_params,
-                                                              ftp_distributor_params, zone))
-
     try:
         logger.info("Creating VM named %s" % name)
-
-        global START, VM_NAME, VM_DISK_SIZE, VM_MACHINE_TYPE
-        START = time.time()
 
         startup_script = open(
             os.path.join(os.path.dirname(__file__), 'startup-script.sh'), 'r'
         ).read()
 
         machine = {
-            'micro' : 'f1-micro',
-            'small' : 'g1-small',
-                '1' : 'n1-standard-1',
-                '2' : 'n1-standard-2',
-                '4' : 'n1-standard-4',
-                '8' : 'n1-standard-8',
-               '16' : 'n1-standard-16',
-               '32' : 'n1-standard-32'
+            'micro': 'f1-micro',
+            'small': 'g1-small',
+                '1': 'n1-standard-1',
+                '2': 'n1-standard-2',
+                '4': 'n1-standard-4',
+                '8': 'n1-standard-8',
+               '16': 'n1-standard-16',
+               '32': 'n1-standard-32'
         }[str(num_cores)]
         machine_type = 'projects/%s/zones/%s/machineTypes/%s' % (project, zone, machine)
 
@@ -207,21 +199,17 @@ def create_instance(name, disk_size, vm_id, num_cores=2, zone=DEFAULT_VM_ZONE, p
                         'key': 'vm_name',
                         'value': name
                     },
-                    {
-                        'key': 'vm_start_time',
-                        'value': START
-                    },
-                    {
-                        'key': 'vm_id',
-                        'value': vm_id
-                    },
+                    # {
+                    #     'key': 'vm_start_time',              #Can be used to figure out cost of running vm
+                    #     'value': START
+                    # },
                     {
                         'key': 'vm_disk_size',
-                        'value': VM_DISK_SIZE
+                        'value': disk_size
                     },
                     {
                         'key': 'vm_machine_type',
-                        'value': VM_MACHINE_TYPE
+                        'value': machine_type
                     }
                 ]
             },
