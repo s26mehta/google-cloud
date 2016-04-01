@@ -79,6 +79,7 @@ def upload_file_in_chunks(local_path, remote_name, bucket=STORAGE_BUCKET):
         logger.debug("Unable to upload file %s to google cloud: %s" % (local_path, e))
         return False
 
+
 def check_if_file_exists(name, bucket=STORAGE_BUCKET):
     """
     Check if file exists on google cloud storage

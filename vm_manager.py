@@ -127,7 +127,7 @@ def get_ip_address_of_vm(name, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME):
         logger.debug("Failed: %s" % e)
 
 
-def create_instance(name, disk_size, num_cores=2, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME,
+def create_instance(name, disk_size, source_image=None, num_cores=2, zone=DEFAULT_VM_ZONE, project=PROJECT_NAME,
                     network=NETWORK_NAME):
     """
     Creates vm_instances with disks that hold ftp distributor and retriever code.
